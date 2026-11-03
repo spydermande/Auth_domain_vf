@@ -3,316 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DNS Record Management</title>
+    <title>DNS Record Sync to Spaceship</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom scrollbar for a sleek dark theme look */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #18181b; /* zinc-900 */
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #3f3f46; /* zinc-700 */
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #52525b; /* zinc-600 */
-        }
-        body {
-            background-color: #09090b; /* zinc-950 */
-            color: #e4e4e7; /* zinc-200 */
-            font-family: 'Inter', sans-serif;
-        }
+        input { background-color: #2d2d2d; color: white; border: 1px solid #404040; }
+        input:focus { outline: none; border-color: #6366f1; }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
-<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
-
-    <!-- Header Section -->
-    <div class="w-full max-w-7xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-            <h1 class="text-2xl font-semibold text-white">DNS Record Management</h1>
-            <p class="text-sm text-zinc-400 mt-1">Manage external API custom group records or upload a zone file.</p>
-        </div>
+<body class="bg-[#1a1a1a] text-gray-300 font-sans p-8 min-h-screen">
+    <div class="max-w-6xl mx-auto space-y-8">
         
-        <div class="flex items-center gap-3 bg-zinc-900 p-2 rounded-lg border border-zinc-800">
-            <label for="file-upload" class="cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-md transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M216,112v96a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V112A16,16,0,0,1,56,96H80a8,8,0,0,1,0,16H56v96H200V112H176a8,8,0,0,1,0-16h24A16,16,0,0,1,216,112ZM93.66,69.66,120,43.31V136a8,8,0,0,0,16,0V43.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,69.66Z"></path></svg>
-                Upload File (.txt, .csv)
-            </label>
-            <input id="file-upload" type="file" accept=".txt,.csv" class="hidden" />
-        </div>
-    </div>
-
-    <!-- Main Dashboard Container -->
-    <div class="w-full max-w-7xl bg-[#131316] rounded-xl border border-zinc-800 shadow-2xl overflow-hidden">
-        
-        <!-- Table Header Panel -->
-        <div class="px-6 py-4 border-b border-zinc-800 flex justify-between items-center bg-[#18181b]">
-            <h2 class="text-md font-semibold text-white flex items-center gap-3">
-                External API Custom Group
-                <span id="record-count" class="text-xs font-normal text-zinc-500 bg-zinc-800 px-2 py-1 rounded-full">0 records</span>
-            </h2>
-            <div class="flex items-center gap-2 text-zinc-400">
-                <button class="p-1.5 hover:bg-zinc-800 rounded transition-colors" title="Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"></path></svg>
-                </button>
+        <!-- API Configuration Panel -->
+        <div class="bg-[#242424] border border-[#333] rounded-lg p-6 flex gap-4 items-end">
+            <div class="flex-1">
+                <label class="block text-sm text-gray-400 mb-1">Target Domain</label>
+                <input type="text" id="targetDomain" placeholder="e.g. example.com" class="w-full p-2 rounded text-sm">
             </div>
-        </div>
-
-        <!-- Table Columns -->
-        <div class="grid grid-cols-[32px_minmax(150px,_2fr)_minmax(120px,_1fr)_minmax(250px,_4fr)_minmax(120px,_1fr)_80px] gap-4 px-6 py-3 border-b border-zinc-800 text-xs font-semibold text-zinc-400 uppercase tracking-wider items-center">
             <div>
-                <input type="checkbox" class="w-3.5 h-3.5 accent-blue-600 rounded bg-zinc-900 border-zinc-700">
+                <input type="file" id="fileInput" accept=".txt,.csv" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#333] file:text-white hover:file:bg-[#404040]">
             </div>
-            <div>Host</div>
-            <div>Type</div>
-            <div>Value</div>
-            <div>TTL</div>
-            <div class="text-right">Actions</div>
         </div>
 
-        <!-- Records List -->
-        <div id="records-container" class="flex flex-col">
-            <!-- Dynamic rows will be injected here -->
+        <!-- Preview Table -->
+        <div class="bg-[#242424] border border-[#333] rounded-lg p-6">
+            <h3 class="text-white font-medium mb-4">Parsed Records Preview</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-[#333]">
+                            <th class="pb-3 px-2 font-medium">Host</th>
+                            <th class="pb-3 px-2 font-medium">Type</th>
+                            <th class="pb-3 px-2 font-medium">Value</th>
+                            <th class="pb-3 px-2 font-medium">Sync Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTableBody">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
-
-        <!-- Add Record Button Area -->
-        <div class="px-6 py-4 bg-[#18181b] border-t border-zinc-800">
-            <button onclick="addNewBlankRecord()" class="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 font-medium px-3 py-1.5 rounded bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg>
-                Add record
-            </button>
-        </div>
-
     </div>
 
-    <!-- JavaScript Logic -->
     <script>
-        // Supported DNS Record Types for the Dropdown
-        const recordTypes = ["A", "AAAA", "CNAME", "MX", "TXT", "SRV", "CAA", "NS", "PTR", "TLSA", "SVCB", "HTTPS"];
-        
-        // TTL Options
-        const ttlOptions = ["Auto", "1 min", "2 min", "5 min", "10 min", "15 min", "30 min", "60 min", "1 hr", "2 hr", "5 hr", "12 hr", "1 day"];
+        let parsedRecords = [];
 
-        // The domain suffix for display purposes (matches screenshot style)
-        const domainSuffix = ".flintfflow.c...";
-
-        // Initial Sample Data (SFMC specific as requested)
-        let dnsRecords = [
-            { host: '@', type: 'A', value: '96.43.154.16', ttl: '60 min' },
-            { host: '13dkim1._domainkey', type: 'CNAME', value: '13dkim1._domainkey.s13.exacttarget.com.', ttl: '60 min' },
-            { host: '@', type: 'MX', value: 'reply.s13.exacttarget.com.', ttl: '60 min', priority: '10' },
-            { host: 'bounce', type: 'MX', value: 'bounce.s13.exacttarget.com.', ttl: '60 min', priority: '10' },
-            { host: '_dmarc', type: 'TXT', value: 'v=DMARC1; p=reject; pct=100;', ttl: '60 min' },
-            { host: '@', type: 'TXT', value: 'SFMC-7p3e3Z4HeGzeqqV-NSJNIHgyqfSsYT-6XWY78EO0', ttl: '60 min' },
-            { host: '@', type: 'TXT', value: 'v=spf1 include:cust-spf.exacttarget.com -all', ttl: '60 min' }
-        ];
-
-        // Function to render the select options
-        function generateOptions(optionsArray, selectedValue) {
-            return optionsArray.map(opt => 
-                `<option value="${opt}" ${opt === selectedValue ? 'selected' : ''}>${opt}</option>`
-            ).join('');
-        }
-
-        // Main Render Function
-        function renderTable() {
-            const container = document.getElementById('records-container');
-            const countLabel = document.getElementById('record-count');
-            
-            container.innerHTML = '';
-            countLabel.innerText = `${dnsRecords.length} records`;
-
-            dnsRecords.forEach((record, index) => {
-                const row = document.createElement('div');
-                row.className = "group grid grid-cols-[32px_minmax(150px,_2fr)_minmax(120px,_1fr)_minmax(250px,_4fr)_minmax(120px,_1fr)_80px] gap-4 px-6 py-2.5 border-b border-zinc-800/50 hover:bg-[#1a1a1f] transition-colors items-center";
-                
-                // Priority input logic for MX records
-                let priorityHtml = '';
-                if (record.type === 'MX' || record.type === 'SRV') {
-                    priorityHtml = `
-                        <input type="text" value="${record.priority || '10'}" onchange="updateRecord(${index}, 'priority', this.value)"
-                            class="w-12 bg-zinc-950 border border-zinc-700 text-zinc-200 text-sm rounded px-2 py-1.5 focus:border-blue-500 focus:outline-none placeholder-zinc-600"
-                            placeholder="Prio">
-                    `;
-                }
-
-                row.innerHTML = `
-                    <!-- Checkbox -->
-                    <div>
-                        <input type="checkbox" class="w-3.5 h-3.5 accent-blue-600 rounded bg-zinc-900 border-zinc-700 cursor-pointer">
-                    </div>
-
-                    <!-- Host -->
-                    <div class="flex items-stretch rounded overflow-hidden border border-zinc-700 focus-within:border-blue-500 bg-zinc-950">
-                        <input type="text" value="${record.host}" onchange="updateRecord(${index}, 'host', this.value)"
-                            class="w-full bg-transparent text-zinc-200 text-sm px-3 py-1.5 focus:outline-none placeholder-zinc-600"
-                            placeholder="Name">
-                        <div class="bg-zinc-800 border-l border-zinc-700 text-zinc-500 text-xs flex items-center px-2 select-none truncate max-w-[100px]">
-                            ${domainSuffix}
-                        </div>
-                    </div>
-
-                    <!-- Type -->
-                    <div>
-                        <select onchange="handleTypeChange(${index}, this.value)"
-                            class="w-full bg-zinc-950 border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer">
-                            ${generateOptions(recordTypes, record.type)}
-                        </select>
-                    </div>
-
-                    <!-- Value -->
-                    <div class="flex items-center gap-2">
-                        <input type="text" value="${record.value}" onchange="updateRecord(${index}, 'value', this.value)"
-                            class="w-full bg-zinc-950 border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 focus:border-blue-500 focus:outline-none placeholder-zinc-600"
-                            placeholder="IPv4 address, domain, or text">
-                        ${priorityHtml}
-                    </div>
-
-                    <!-- TTL -->
-                    <div>
-                        <select onchange="updateRecord(${index}, 'ttl', this.value)"
-                            class="w-full bg-zinc-950 border border-zinc-700 text-zinc-200 text-sm rounded px-3 py-1.5 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer">
-                            ${generateOptions(ttlOptions, record.ttl)}
-                        </select>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="flex items-center justify-end gap-3 text-zinc-500">
-                        <!-- Cloud/Proxy Status Icon (Visual only) -->
-                        <div class="cursor-pointer hover:text-orange-400 transition-colors" title="DNS only">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M74.34,163.66a8,8,0,0,1,11.32-11.32L96,162.69l10.34-10.35a8,8,0,0,1,11.32,11.32L107.31,174l10.35,10.34a8,8,0,0,1-11.32,11.32L96,185.31l-10.34,10.35a8,8,0,0,1-11.32-11.32L84.69,174ZM240,128a80,80,0,0,1-80,80H72A48,48,0,0,1,72,112a47.38,47.38,0,0,1,13.68,2,80,80,0,0,1,154.32,14ZM224,128A64,64,0,0,0,111.46,95.53a8,8,0,0,1-10-3.32,32,32,0,1,0-26,51.78,8,8,0,0,1,8,8v4A64,64,0,0,0,224,128Z"></path></svg>
-                        </div>
-                        
-                        <!-- Delete Button -->
-                        <button onclick="deleteRecord(${index})" class="hover:text-red-500 transition-colors cursor-pointer" title="Delete Record">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"></path></svg>
-                        </button>
-                    </div>
-                `;
-                container.appendChild(row);
-            });
-
-            if(dnsRecords.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-zinc-500 text-sm">No DNS records found. Upload a file or add one manually.</div>`;
-            }
-        }
-
-        // Update internal state when user types/selects
-        function updateRecord(index, field, value) {
-            dnsRecords[index][field] = value;
-        }
-
-        // Handle Type Change (to conditionally show/hide Priority for MX records)
-        function handleTypeChange(index, newType) {
-            dnsRecords[index].type = newType;
-            if (newType === 'MX' || newType === 'SRV') {
-                if (!dnsRecords[index].priority) dnsRecords[index].priority = '10';
-            } else {
-                delete dnsRecords[index].priority;
-            }
-            renderTable();
-        }
-
-        // Add a blank record to the end
-        function addNewBlankRecord() {
-            dnsRecords.push({
-                host: '@',
-                type: 'TXT',
-                value: '',
-                ttl: '60 min'
-            });
-            renderTable();
-        }
-
-        // Delete a record
-        function deleteRecord(index) {
-            dnsRecords.splice(index, 1);
-            renderTable();
-        }
-
-        // File Upload and Parsing Logic
-        document.getElementById('file-upload').addEventListener('change', function(event) {
-            const file = event.target.files[0];
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 const text = e.target.result;
-                parseAndAddRecords(text);
-                // reset input so the same file can be uploaded again if needed
-                event.target.value = ''; 
+                parseFileContent(text);
+                
+                if(document.getElementById('targetDomain').value) {
+                    syncToBackend();
+                } else {
+                    alert("Please enter a Target Domain before uploading.");
+                }
             };
             reader.readAsText(file);
         });
 
-        function parseAndAddRecords(text) {
+        function parseFileContent(text) {
             const lines = text.split('\n');
-            let addedCount = 0;
+            parsedRecords = [];
+            const tbody = document.getElementById('recordsTableBody');
+            tbody.innerHTML = '';
 
             lines.forEach(line => {
                 line = line.trim();
-                if (!line || line.startsWith('#') || line.startsWith('//')) return; // Skip empty and comment lines
+                if (!line || line.startsWith('#')) return;
 
-                // Flexible Regex to parse line. 
-                // Matches: [Host] [whitespace/comma] [TYPE] [whitespace/comma] [Value]
-                // Validates TYPE against known standard DNS types.
-                const regex = /^(\S+)[\s,]+(A|AAAA|MX|CNAME|SRV|TXT|CAA|NS|PTR|TLSA|SVCB|HTTPS)[\s,]+(.+)$/i;
-                const match = line.match(regex);
+                const parts = line.split(/\s+/);
+                if (parts.length >= 3) {
+                    const host = parts[0];
+                    const type = parts[1];
+                    const value = parts.slice(2).join(' ');
+                    
+                    parsedRecords.push({ host, type, value, ttl: 3600 });
 
-                if (match) {
-                    // Clean up potential quotes from CSV formats
-                    let parsedHost = match[1].replace(/^"|"$/g, '').trim();
-                    let parsedType = match[2].toUpperCase();
-                    let parsedValue = match[3].replace(/^"|"$/g, '').trim();
-                    let parsedPriority = null;
-
-                    // If it's an MX or SRV record, there might be a priority number before the actual string value
-                    // E.g., "10 mail.example.com"
-                    if ((parsedType === 'MX' || parsedType === 'SRV') && /^\d+\s+/.test(parsedValue)) {
-                        const valParts = parsedValue.split(/\s+(.*)/);
-                        parsedPriority = valParts[0];
-                        parsedValue = valParts[1] || '';
-                    }
-
-                    // For CSVs that might end with a TTL or commas, light cleanup:
-                    if(parsedValue.endsWith(',')) {
-                        parsedValue = parsedValue.slice(0, -1).trim();
-                    }
-
-                    const newRecord = {
-                        host: parsedHost,
-                        type: parsedType,
-                        value: parsedValue,
-                        ttl: '60 min' // Default TTL as requested
-                    };
-
-                    if (parsedPriority) {
-                        newRecord.priority = parsedPriority;
-                    }
-
-                    dnsRecords.push(newRecord);
-                    addedCount++;
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-[#333]';
+                    row.innerHTML = `
+                        <td class="py-3 px-2">${host}</td>
+                        <td class="py-3 px-2"><span class="bg-[#333] px-2 py-1 rounded text-xs">${type}</span></td>
+                        <td class="py-3 px-2 truncate max-w-xs" title="${value}">${value}</td>
+                        <td class="py-3 px-2 text-yellow-500 status-cell">Pending</td>
+                    `;
+                    tbody.appendChild(row);
                 }
             });
-
-            renderTable();
-            
-            // Optional: Provide tiny feedback
-            if(addedCount > 0) {
-                console.log(`Successfully parsed and added ${addedCount} records.`);
-            } else {
-                console.warn("Could not parse any standard DNS records from the uploaded file.");
-            }
         }
 
-        // Initial Render
-        window.onload = renderTable;
+        async function syncToBackend() {
+            const domain = document.getElementById('targetDomain').value.trim();
+            const statusCells = document.querySelectorAll('.status-cell');
 
+            statusCells.forEach(cell => { cell.textContent = 'Syncing...'; cell.className = 'py-3 px-2 text-blue-400 status-cell'; });
+
+            // Format records for Spaceship API schema
+            const payloadRecords = parsedRecords.map(record => {
+                let formattedRecord = { type: record.type.toUpperCase(), name: record.host, ttl: record.ttl };
+                switch(formattedRecord.type) {
+                    case 'A': case 'AAAA': formattedRecord.address = record.value; break;
+                    case 'CNAME': formattedRecord.cname = record.value; break;
+                    case 'MX': formattedRecord.exchange = record.value; formattedRecord.preference = 10; break;
+                    case 'TXT': default: formattedRecord.value = record.value; break;
+                }
+                return formattedRecord;
+            });
+
+            try {
+                // Send payload to local Node.js server instead of directly to Spaceship
+                const response = await fetch(`http://localhost:3000/api/sync-dns`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: domain, records: payloadRecords })
+                });
+
+                if (response.ok) {
+                    statusCells.forEach(cell => { cell.textContent = 'Uploaded'; cell.className = 'py-3 px-2 text-green-500 status-cell'; });
+                } else {
+                    statusCells.forEach(cell => { cell.textContent = 'Failed'; cell.className = 'py-3 px-2 text-red-500 status-cell'; });
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                statusCells.forEach(cell => { cell.textContent = 'Error'; cell.className = 'py-3 px-2 text-red-500 status-cell'; });
+            }
+        }
     </script>
 </body>
 </html>
